@@ -134,6 +134,7 @@ private struct MoodCard: View {
 
 struct MoodPickerView: View {
     @State private var selectedIndex: Int = 3   // empieza en el centro (disperso)
+    var onConfirm: (() -> Void)? = nil
 
     var body: some View {
         GeometryReader { geo in
@@ -164,7 +165,7 @@ struct MoodPickerView: View {
 
                     // — Botón de confirmación
                     Button {
-                        // acción al confirmar
+                        onConfirm?()
                     } label: {
                         Text("Confirmar")
                             .font(.custom("Poppins-Bold", size: 18))
