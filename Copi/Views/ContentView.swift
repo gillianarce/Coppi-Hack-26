@@ -13,6 +13,7 @@ enum AppRoute: Hashable {
     case moodPicker
     case respiracion
     case colorGrading
+    case breathDetection
 }
 
 // MARK: - Root Viewc
@@ -45,6 +46,8 @@ struct ContentView: View {
                         Respiracion478View()
                     case .colorGrading:
                         ColorGradingView()
+                    case .breathDetection:
+                        BreathDetectionView()
                     }
                 }
             }
