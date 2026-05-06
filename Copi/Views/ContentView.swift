@@ -69,6 +69,10 @@ struct ContentView: View {
             .navigationBarBackButtonHidden(true)
             // Inyectar el coordinator a todo el árbol de vistas
             .environmentObject(coordinator)
+            // ── Conectar el coordinator al store para AppIntents ─────────
+            .onAppear {
+                CoordinatorStore.shared.coordinator = coordinator
+            }
         }
     }
 

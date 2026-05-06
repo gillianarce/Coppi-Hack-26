@@ -6,9 +6,16 @@
 //
 
 import SwiftUI
+import AppIntents
 
 @main
 struct CopiApp: App {
+
+    init() {
+        // Registra las frases de Siri al instalar / actualizar la app
+        CopiShortcuts.updateAppShortcutParameters()
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()
