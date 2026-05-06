@@ -11,16 +11,21 @@ import SwiftUI
 
 enum AppRoute: Hashable {
     case moodPicker
+    case situaciones
     case respiracion
     case colorGrading
     case breathDetection
+    case journal
+    case abrazaMariposa
+    case recuerda
+    case mecanica
 }
 
-// MARK: - Root Viewc
+// MARK: - Root View
 
 struct ContentView: View {
-    @State private var path: [AppRoute] = []
     @State private var splashDone = false
+    @StateObject private var coordinator = ActivitySessionCoordinator()
 
     var body: some View {
         if !splashDone {
@@ -36,22 +41,34 @@ struct ContentView: View {
                 }
         } else {
             // ── Flujo principal ─────────────────────────────────────────
-            NavigationStack(path: $path) {
-                MoodPickerView()
-                .navigationDestination(for: AppRoute.self) { route in
-                    switch route {
-                    case .moodPicker:
-                        MoodPickerView()
-                    case .respiracion:
-                        Respiracion478View()
-                    case .colorGrading:
-                        ColorGradingView()
-                    case .breathDetection:
-                        BreathDetectionView()
+            NavigationStack(path: $coordinator.path) {
+                MoodPickerView(path: $coordinator.path)
+                    .navigationDestination(for: AppRoute.self) { route in
+                        switch route {
+                        case .moodPicker:
+                            MoodPickerView(path: $coordinator.path)
+                        case .situaciones:
+                            SituacionesView()
+                        case .respiracion:
+                            Respiracion478View()
+                        case .colorGrading:
+                            ColorGradingView()
+                        case .breathDetection:
+                            BreathDetectionView()
+                        case .journal:
+                            JournalView()
+                        case .abrazaMariposa:
+                            AbrazaMariposView()
+                        case .recuerda:
+                            RecuerdaView()
+                        case .mecanica:
+                            MecanicaTitleView()
+                        }
                     }
-                }
             }
             .navigationBarBackButtonHidden(true)
+            // Inyectar el coordinator a todo el árbol de vistas
+            .environmentObject(coordinator)
         }
     }
 

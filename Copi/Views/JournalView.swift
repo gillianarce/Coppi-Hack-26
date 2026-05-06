@@ -236,10 +236,12 @@ final class SpeechRecognizer: ObservableObject {
 // MARK: - Journal View
 
 struct JournalView: View {
+    @EnvironmentObject private var coordinator: ActivitySessionCoordinator
     @StateObject private var speech = SpeechRecognizer()
     @State private var pulseScale: CGFloat = 1.0
     @State private var isEditing: Bool = false
     @State private var editableText: String = ""
+    @State private var showConfirm: Bool = false
     @FocusState private var editorFocused: Bool
 
     // Amarillo del sistema de diseño
@@ -291,16 +293,17 @@ struct JournalView: View {
                         .padding(.top, h * 0.07)
                         .padding(.horizontal, 32)
 
-                    // — Caja de transcripción
+                    Spacer()
+
+                    // — Caja de transcripción centrada
                     transcriptBox
-                        .padding(.top, 28)
                         .padding(.horizontal, 24)
 
                     Spacer()
 
-                    // — Botón de micrófono (oculto mientras se edita)
+                    // — Botón inferior: mic ↔ confirmar
                     if !isEditing {
-                        micButton
+                        bottomButton
                             .padding(.bottom, h * 0.06)
                             .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
@@ -309,12 +312,13 @@ struct JournalView: View {
             }
             .onChange(of: speech.isRecording) { _, recording in
                 pulseScale = recording ? 1.06 : 1.0
-            }
-            // Sincronizar el texto del speech con el editor cuando no se está editando
-            .onChange(of: speech.transcript) { _, newValue in
-                if !isEditing {
-                    editableText = newValue
+                // Al parar con texto, aparece el botón de confirmar
+                if !recording && !editableText.isEmpty {
+                    withAnimation(.spring(duration: 0.5)) { showConfirm = true }
                 }
+            }
+            .onChange(of: speech.transcript) { _, newValue in
+                if !isEditing { editableText = newValue }
             }
             .alert("Permiso denegado", isPresented: $speech.permissionDenied) {
                 Button("OK", role: .cancel) {}
@@ -367,80 +371,107 @@ struct JournalView: View {
                     .padding(.bottom, 12)
                 }
             } else {
-                // ── Modo lectura — toda la caja es tappable ───────────
-                Button {
-                    guard !speech.isRecording else { return }
-                    isEditing = true
-                    editorFocused = true
-                } label: {
-                    ZStack(alignment: .topLeading) {
-                        // Placeholder
-                        if editableText.isEmpty {
-                            Text(speech.isRecording ? "Escuchando…" : "Toca para escribir o editar")
-                                .font(.custom("Poppins-Regular", size: 17))
-                                .foregroundStyle(darkBlue.opacity(0.35))
-                                .padding(20)
-                        }
-
-                        Text(editableText)
-                            .font(.custom("Poppins-Regular", size: 17))
-                            .foregroundStyle(darkBlue)
-                            .multilineTextAlignment(.center)
-                            .padding(20)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                    }
-                    .frame(maxWidth: .infinity, minHeight: 180, maxHeight: 240)
-                    // Indicador sutil de que es editable (solo cuando no graba)
-                    .overlay(alignment: .bottomTrailing) {
-                        if !speech.isRecording {
-                            Image(systemName: "pencil")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle(darkBlue.opacity(0.25))
-                                .padding(12)
-                        }
-                    }
+                // ── Modo lectura ──────────────────────────────────────
+                if editableText.isEmpty {
+                    Text(speech.isRecording ? "Escuchando…" : "Tu relato aparecerá aquí")
+                        .font(.custom("Poppins-Regular", size: 17))
+                        .foregroundStyle(darkBlue.opacity(0.35))
+                        .padding(20)
                 }
-                .buttonStyle(.plain)
-                // Feedback háptico sutil al entrar en edición
-                .sensoryFeedback(.selection, trigger: isEditing)
+
+                Text(editableText)
+                    .font(.custom("Poppins-Regular", size: 17))
+                    .foregroundStyle(darkBlue)
+                    .multilineTextAlignment(.center)
+                    .padding(20)
+                    .frame(maxWidth: .infinity, alignment: .center)
+
+                // Botón lápiz — solo visible cuando hay texto y no se está grabando
+                if !editableText.isEmpty && !speech.isRecording {
+                    Button {
+                        isEditing = true
+                        editorFocused = true
+                    } label: {
+                        Image(systemName: "pencil")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(darkBlue.opacity(0.5))
+                            .padding(8)
+                            .background(Color.white.opacity(0.8), in: Circle())
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                    .padding(10)
+                }
             }
         }
         .frame(minHeight: 180, maxHeight: isEditing ? 280 : 240)
         .animation(.spring(duration: 0.3), value: isEditing)
     }
 
-    private var micButton: some View {
+    private var bottomButton: some View {
         VStack(spacing: 14) {
-            Button {
-                speech.toggleRecording()
-            } label: {
-                ZStack {
-                    // Anillo exterior (visible solo al grabar)
-                    Circle()
-                        .fill(Color.white.opacity(speech.isRecording ? 0.35 : 0))
-                        .frame(width: 88, height: 88)
+            ZStack {
+                // ── Botón de confirmar ────────────────────────────────
+                Button {
+                    coordinator.advance()
+                } label: {
+                    ZStack {
+                        Circle()
+                            .fill(darkBlue)
+                            .frame(width: 72, height: 72)
+                            .shadow(color: darkBlue.opacity(0.35), radius: 10, y: 4)
 
-                    // Círculo blanco principal
-                    Circle()
-                        .fill(Color.white)
-                        .frame(width: 72, height: 72)
-                        .shadow(color: .black.opacity(0.10), radius: 8, y: 3)
-
-                    // Ícono SF Symbol
-                    Image(systemName: speech.isRecording ? "stop.fill" : "mic.fill")
-                        .font(.system(size: 28, weight: .medium))
-                        .foregroundStyle(darkBlue)
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 26, weight: .semibold))
+                            .foregroundStyle(accentYellow)
+                    }
                 }
-            }
-            .buttonStyle(.plain)
-            .scaleEffect(speech.isRecording ? 1.08 : 1.0)
-            .animation(.spring(duration: 0.3), value: speech.isRecording)
+                .buttonStyle(.plain)
+                .scaleEffect(showConfirm ? 1.0 : 0.4)
+                .opacity(showConfirm ? 1.0 : 0.0)
 
-            Text(speech.isRecording ? "Presiona para detener" : "Presiona para comenzar a grabar")
+                // ── Botón de micrófono ────────────────────────────────
+                Button {
+                    speech.toggleRecording()
+                    if showConfirm && !speech.isRecording {
+                        withAnimation(.spring(duration: 0.4)) { showConfirm = false }
+                    }
+                } label: {
+                    ZStack {
+                        Circle()
+                            .fill(Color.white.opacity(speech.isRecording ? 0.35 : 0))
+                            .frame(width: 88, height: 88)
+
+                        Circle()
+                            .fill(Color.white)
+                            .frame(width: 72, height: 72)
+                            .shadow(color: .black.opacity(0.10), radius: 8, y: 3)
+
+                        Image(systemName: speech.isRecording ? "stop.fill" : "mic.fill")
+                            .font(.system(size: 28, weight: .medium))
+                            .foregroundStyle(darkBlue)
+                    }
+                }
+                .buttonStyle(.plain)
+                .scaleEffect(speech.isRecording ? 1.08 : 1.0)
+                .scaleEffect(showConfirm ? 0.4 : 1.0)
+                .opacity(showConfirm ? 0.0 : 1.0)
+            }
+            .animation(.spring(duration: 0.45), value: showConfirm)
+            .animation(.spring(duration: 0.3), value: speech.isRecording)
+            .frame(width: 88, height: 88)
+
+            // Etiqueta dinámica
+            Text(showConfirm
+                 ? "Continuar"
+                 : (speech.isRecording ? "Presiona para detener" : "Presiona para comenzar a grabar"))
                 .font(.custom("Poppins-Regular", size: 14))
                 .foregroundStyle(darkBlue.opacity(0.7))
+                .animation(.easeInOut(duration: 0.25), value: showConfirm)
+                .animation(.easeInOut(duration: 0.25), value: speech.isRecording)
         }
     }
+
+    private var micButton: some View { bottomButton }
 }
 
 #Preview {

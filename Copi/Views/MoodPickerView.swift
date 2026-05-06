@@ -134,7 +134,11 @@ private struct MoodCard: View {
 
 struct MoodPickerView: View {
     @State private var selectedIndex: Int = 3   // empieza en el centro (disperso)
-    var onConfirm: (() -> Void)? = nil
+    @Binding var path: [AppRoute]
+
+    init(path: Binding<[AppRoute]> = .constant([])) {
+        self._path = path
+    }
 
     var body: some View {
         GeometryReader { geo in
@@ -165,7 +169,7 @@ struct MoodPickerView: View {
 
                     // — Botón de confirmación
                     Button {
-                        onConfirm?()
+                        path.append(.situaciones)
                     } label: {
                         Text("Confirmar")
                             .font(.custom("Poppins-Bold", size: 18))

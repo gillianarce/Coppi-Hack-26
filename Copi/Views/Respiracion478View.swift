@@ -25,6 +25,8 @@ private let breathSteps: [BreathStep] = [
 
 struct Respiracion478View: View {
 
+    @EnvironmentObject private var coordinator: ActivitySessionCoordinator
+
     /// Número de repetición actual (1-based)
     let totalRepetitions: Int = 4
     @State private var currentRepetition: Int = 1
@@ -37,10 +39,6 @@ struct Respiracion478View: View {
 
     /// Tarea del timer activa
     @State private var timerTask: Task<Void, Never>? = nil
-
-    /// Incrementa cada vez que se completa una vuelta completa (3 pasos).
-    /// Usar como `id` en LottieView fuerza recreación solo en ese momento.
-    @State private var lottieEpoch: Int = 0
 
     private var currentStep: BreathStep { breathSteps[stepIndex] }
 
@@ -92,7 +90,6 @@ struct Respiracion478View: View {
                 .playing(loopMode: .autoReverse)
                 .resizable()
                 .frame(width: 600)
-                .id(lottieEpoch) // solo se recrea cuando cambia lottieEpoch (vuelta 3→1)
         }
         .ignoresSafeArea(edges: .bottom)
         .onAppear { startTimer() }
@@ -103,25 +100,26 @@ struct Respiracion478View: View {
 
     private func startTimer() {
         timerTask?.cancel()
-        timeRemaining = currentStep.duration
+        let duration = currentStep.duration
+        timeRemaining = duration
 
         timerTask = Task {
-            repeat {
-                try? await Task.sleep(for: .seconds(1))
-                guard !Task.isCancelled else { return }
-                withAnimation {
-                    timeRemaining -= 1
+            // Use a fixed start time to avoid drift accumulation
+            let start = Date.now
+            for tick in 1...duration {
+                // Sleep until the exact moment this tick should fire
+                let target = start.addingTimeInterval(TimeInterval(tick))
+                let delay = target.timeIntervalSinceNow
+                if delay > 0 {
+                    try? await Task.sleep(for: .seconds(delay))
                 }
-            } while timeRemaining > 0
-
-            guard !Task.isCancelled else { return }
-
-            // Si acabamos de terminar el paso 3 (índice 2), recreamos Lottie
-            // en este momento exacto — cuando el timer llega a 0 en el último paso
-            if stepIndex == breathSteps.count - 1 {
-                await MainActor.run { lottieEpoch += 1 }
+                guard !Task.isCancelled else { return }
+                await MainActor.run {
+                    withAnimation { timeRemaining = duration - tick }
+                }
             }
 
+            guard !Task.isCancelled else { return }
             await MainActor.run { advance() }
         }
     }
@@ -129,16 +127,16 @@ struct Respiracion478View: View {
     private func advance() {
         let nextStep = stepIndex + 1
         if nextStep < breathSteps.count {
-            // Paso 1→2 o 2→3: la animación Lottie sigue sin interrupciones
             stepIndex = nextStep
         } else {
-            // Paso 3→1: nueva vuelta
-            // lottieEpoch ya fue incrementado en startTimer cuando el paso 3 terminó
             stepIndex = 0
             if currentRepetition < totalRepetitions {
                 currentRepetition += 1
             } else {
-                currentRepetition = 1
+                // Última ronda completada → avanzar al siguiente paso de la sesión
+                timerTask?.cancel()
+                coordinator.advance()
+                return
             }
         }
         startTimer()

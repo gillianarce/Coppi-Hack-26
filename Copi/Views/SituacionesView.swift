@@ -18,6 +18,8 @@ struct Situacion: Identifiable, Hashable {
 
 struct SituacionesView: View {
 
+    @EnvironmentObject private var coordinator: ActivitySessionCoordinator
+
     // Opciones disponibles
     private let situaciones: [Situacion] = [
         Situacion(titulo: "Carga laboral"),
@@ -27,7 +29,6 @@ struct SituacionesView: View {
     ]
 
     @State private var seleccionadas: Set<UUID> = []
-    @State private var navegarSiguiente = false
 
     // MARK: - Colors
     private let fondoColor      = Color(red: 1.00, green: 0.98, blue: 0.94)   // blanco-crema (fondo general)
@@ -73,7 +74,7 @@ struct SituacionesView: View {
                 // ── Botón Confirmar ─────────────────────────────────────
                 Button {
                     if !seleccionadas.isEmpty {
-                        navegarSiguiente = true
+                        coordinator.startSession()
                     }
                 } label: {
                     Text("Confirmar")
@@ -94,10 +95,6 @@ struct SituacionesView: View {
 
                 Spacer().frame(height: 48)
             }
-        }
-        // TODO: Reemplaza `PlaceholderView()` con la pantalla de destino real
-        .navigationDestination(isPresented: $navegarSiguiente) {
-            PlaceholderView()
         }
         .navigationBarBackButtonHidden(true)
     }
@@ -142,19 +139,6 @@ private struct SituacionChip: View {
         }
         .buttonStyle(.plain)
         .animation(.easeInOut(duration: 0.18), value: isSelected)
-    }
-}
-
-// MARK: - Placeholder (eliminar cuando tengas la pantalla destino)
-
-struct PlaceholderView: View {
-    var body: some View {
-        ZStack {
-            Color(red: 1.00, green: 0.98, blue: 0.94).ignoresSafeArea()
-            Text("Próxima pantalla 🚧")
-                .font(.custom("Poppins-Bold", size: 24))
-                .foregroundStyle(Color(red: 0.18, green: 0.24, blue: 0.32))
-        }
     }
 }
 

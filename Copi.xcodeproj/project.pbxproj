@@ -459,6 +459,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Copi/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Usamos la cámara para detectar la posición de tus brazos durante el ejercicio";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Necesitamos el micrófono para escucharte.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Necesitamos reconocimiento de voz para capturar tu journal.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -494,6 +496,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Copi/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Usamos la cámara para detectar la posición de tus brazos durante el ejercicio";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Necesitamos el micrófono para escucharte.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Necesitamos reconocimiento de voz para capturar tu journal.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

@@ -87,8 +87,7 @@ extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
 
         do {
             try handler.perform([request])
-            guard let results = request.results as? [VNHumanBodyPoseObservation],
-                  let observation = results.first else { return }
+            guard let observation = request.results?.first else { return }
 
             let neck = try observation.recognizedPoint(.neck)
             let leftShoulder = try observation.recognizedPoint(.leftShoulder)
