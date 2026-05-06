@@ -13,6 +13,7 @@ enum AppRoute: Hashable {
     case moodPicker
     case respiracion
     case colorGrading
+    case journal
 }
 
 // MARK: - Root Viewc
@@ -36,7 +37,7 @@ struct ContentView: View {
         } else {
             // ── Flujo principal ─────────────────────────────────────────
             NavigationStack(path: $path) {
-                MoodPickerView()
+                MoodPickerView(onConfirm: { path.append(.journal) })
                 .navigationDestination(for: AppRoute.self) { route in
                     switch route {
                     case .moodPicker:
@@ -45,6 +46,8 @@ struct ContentView: View {
                         Respiracion478View()
                     case .colorGrading:
                         ColorGradingView()
+                    case .journal:
+                        JournalView()
                     }
                 }
             }
